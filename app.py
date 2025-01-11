@@ -66,7 +66,6 @@ def evaluate_expression():
 
 def main():
     # Sidebar content
-    st.sidebar.image("cinnamon_bootcamp.jpg", caption="Cinnamon Bootcamp", use_column_width=True)  # Adjust file name and caption as needed
     st.sidebar.write("""
         **Calculator Instructions:**
 
