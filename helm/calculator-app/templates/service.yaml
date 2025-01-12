@@ -1,17 +1,15 @@
-# templates/service.yaml
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Release.Name }}-calculator
+  name: {{ .Release.Name }}
   labels:
-    app: calculator
-    {{- include "calculator-app.labels" . | nindent 4 }}
+    app: {{ .Release.Name }}
 spec:
-  type: {{ .Values.service.type | default "ClusterIP" }}
+  type: {{ .Values.service.type }}
   ports:
-  - port: {{ .Values.service.port | default 8501 }}
-    targetPort: http
+  - port: {{ .Values.service.port }}
+    targetPort: 8501
     protocol: TCP
     name: http
   selector:
-    app: calculator
+    app: {{ .Release.Name }}

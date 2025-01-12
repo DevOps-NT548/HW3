@@ -1,30 +1,22 @@
-# templates/ingress.yaml
-{{- if .Values.ingress.enabled -}}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: {{ .Release.Name }}-calculator
-  labels:
-    {{- include "calculator-app.labels" . | nindent 4 }}
-  {{- with .Values.ingress.annotations }}
+  name: {{ .Release.Name }}-ingress
   annotations:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+    nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
   ingressClassName: {{ .Values.ingress.className }}
   rules:
-  {{- range .Values.ingress.hosts }}
-    - host: {{ .host | quote }}
+    - host: {{ (index .Values.ingress.hosts 0).host }}
       http:
         paths:
-        {{- range .paths }}
-          - path: {{ .path }}
-            pathType: {{ .pathType }}
+          - path: /
+            pathType: Prefix
             backend:
               service:
-                name: {{ $.Release.Name }}-calculator
+                name: {{ $.Release.Name }}
                 port:
-                  number: {{ $.Values.service.port | default 8501 }}
-        {{- end }}
-  {{- end }}
-{{- end }}
+                  number: {{ $.Values.service.port }}

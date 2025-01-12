@@ -5,13 +5,13 @@ terraform {
       version = "4.80.0" // Provider version
     }
   }
-  required_version = "1.10.3" // Terraform version
+  required_version = "1.10.2" // Terraform version
 }
 
 provider "google" {
   project     = var.project_id
   region      = var.region
-  credentials = file("hw3_key.json")
+  credentials = file("/home/kevvn/Documents/UIT/NT548/HW3/hw3_key.json")
 }
 
 // Google Kubernetes Engine
