@@ -1,6 +1,6 @@
 apiVersion: v2
 name: calculator-app
-description: A simple chart for your Streamlit calculator app
+description: A simple chart for your FastApi calculator app
 type: application
 version: 0.1.0
 appVersion: "1.0.0"

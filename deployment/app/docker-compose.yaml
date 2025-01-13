@@ -6,7 +6,5 @@ services:
       context: ../..
       dockerfile: deployment/app/App_Dockerfile
     ports:
-      - "8501:8501"
-    volumes:
-      - ../..:/app
+      - "8501:8000"
     restart: unless-stopped

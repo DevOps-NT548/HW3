@@ -4,12 +4,12 @@ metadata:
   name: {{ .Release.Name }}
   labels:
     app: {{ .Release.Name }}
+  namespace: app
 spec:
-  type: {{ .Values.service.type }}
-  ports:
-  - port: {{ .Values.service.port }}
-    targetPort: 8501
-    protocol: TCP
-    name: http
   selector:
     app: {{ .Release.Name }}
+  ports:
+    - port: 8000
+      protocol: TCP
+      targetPort: 8000
+  type: NodePort

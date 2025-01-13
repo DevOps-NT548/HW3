@@ -3,20 +3,5 @@ replicaCount: 1
 image:
   repository: kevvn/calculator-app
   tag: latest
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
 
-service:
-  type: ClusterIP
-  port: 8501
-
-ingress:
-  enabled: true
-  className: "nginx"
-  annotations: {}
-  hosts:
-    - host: calculator.com
-      paths:
-        - path: /
-          pathType: Prefix
-
-resources: {}
