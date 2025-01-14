@@ -343,12 +343,12 @@ alertmanager:
     - name: 'null'
     - name: 'email-alerts'
       email_configs:
-      - to: 22520864@gm.uit.edu.vn # Replace with the recipient's email
-        from: ntalertmanager@gmail.com                            ## Added
-        smarthost: smtp.gmail.com:587                              ## Added
-        auth_username: ntalertmanager@gmail.com                   ## Added
-        auth_identity: ntalertmanager@gmail.com                   ## Added
-        auth_password: cmivmaxvpyybohii      ## Added 
+      - to: 22520864@gm.uit.edu.vn     # Replace with the recipient's email
+        from: ntalertmanager@gmail.com                         
+        smarthost: smtp.gmail.com:587                             
+        auth_username: ntalertmanager@gmail.com                   
+        auth_identity: ntalertmanager@gmail.com                   
+        auth_password: cmivmaxvpyybohii     
     templates:
     - '/etc/alertmanager/config/*.tmpl'
 

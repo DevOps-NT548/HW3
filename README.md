@@ -22,16 +22,8 @@
     - [Install kubectl, kubectx and kubens](#install-kubectl-kubectx-and-kubens)
       - [Deploy nginx ingress controller](#deploy-nginx-ingress-controller)
       - [Deploy model serving service](#deploy-model-serving-service)
+      - [Make changes to the kube-prometheus-stack helm file](#make-changes-to-the-kube-prometheus-stack-helm-file)
       - [Deploy monitoring service](#deploy-monitoring-service)
-  - [CI/CD with Jenkins on GCE](#cicd-with-jenkins-on-gce)
-    - [Create the VM instance](#create-the-vm-instance)
-    - [Install Docker and Jenkins on GCE](#install-docker-and-jenkins-on-gce)
-    - [Setting Jenkins via GCE](#setting-jenkins-via-gce)
-      - [Launch Jenkins instance](#launch-jenkins-instance)
-      - [Setup connection Jenkins to github repo](#setup-connection-jenkins-to-github-repo)
-      - [Setup connection GKE to Jenkins](#setup-connection-gke-to-jenkins)
-      - [Create jenkins service account in GKE](#create-jenkins-service-account-in-gke)
-    - [Continuous deployment](#continuous-deployment)
   - [Demo](#demo)
          
 
@@ -41,21 +33,12 @@
 <!--te-->
 
 ## Overal architecture
-![overal architecture](images/mlops_flowchart.png)
+![overal architecture](images/Flowchart.png)
 
 ## Project structure
 ```bash
 project-root/
 ├── .gitignore                   # Git ignore file
-├── ansible/                     # Ansible configurations for GCE 
-│   ├── inventory
-│   ├── playbook_with_jenkins_and_sonarquebe/
-│   │   ├── create_compute_instance.yaml
-│   │   ├── deploy_jenkins_sonarquebe.yaml
-│   ├── requirements.txt
-│   ├── secrets/                 # Secrets for Ansible
-│   │   └── hw3_key.json      # Example secret file (should be ignored)
-│   └── venv/                    # Virtual environment (should be ignored)
 ├── deployment/                  # Deployment configurations
 │   ├── app/
 │   └── jenkins/
@@ -64,20 +47,14 @@ project-root/
 │   ├── grafana-prometheus/      # Monitoring stack
 │   └── nginx-ingress/           # Ingress controller
 ├── images/                      # Images for documentation
-├── jenkins_sa/                  # Jenkins service account configurations
-│   ├── jenkins-sa.yaml
-│   ├── role_binding.yaml
-│   └── role.yaml
 ├── terraform/                   # Infrastructure as Code
 │   ├── main.tf
 │   ├── variables.tf
 │   └── output.tf
-├── scripts/                     # Utility scripts
-├── Jenkinsfile                  # CI/CD pipeline
 ├── Makefile                     # Build automation
 ├── README.md                    # Documentation
 ├── app.py                       # Main application file
-├── hw3_key.json                 # Service account key (should be ignored)key (should be ignored)
+└── hw3_key.json                 # Service account key (should be ignored)
 ```
 ## Getting Started
 
@@ -87,7 +64,7 @@ To get started with this project, we will need to do the following
 
 Clone the repository to your local machine.
 
-`git clone https://github.com/DevOps-NT548/TextToImage.git`
+`git clone https://github.com/DevOps-NT548/HW3.git`
 
 Install all dependencies dedicated to the project
 
@@ -107,9 +84,9 @@ pip install -r requirements.txt
 make app_local_up
 ```
 
-Navigating deployement model using `localhost:3000` on host machine
+Navigating deployement model using `localhost:8501/docs` on host machine
 
-![app_api](images/app_local.png)
+![app_api](images/fast_api_local.png)
 
 
 ## Cloud migration
@@ -170,16 +147,13 @@ terraform apply # Apply the configuration to create the GKE cluster
 
 - A created cluster will be pop up in GKE UI (after 8 to 10 minutes)
 
-![overview_gke_cluster](images/completed_gke_cluster.png)
 
-- connect to gke cluster using `gcloud cli`
+- connect to gke cluster using `gcloud cli` (Replace \<cluster-name>, \<cluster-zone>, \<project-name> with your corresponding values).
 
 ```bash
-gcloud container clusters get-credentials mlops-415023-gke --zone us-central-1a --project mlops-415023
+gcloud container clusters get-credentials <cluster-name> --zone=<cluster-zone> --project=<project-name>
 ```
 - To view your highlighted cluster ID in the terminal, you can use the `kubectx` command.
-
-![cluster_id](images/cluster_id.png)
 
 #### Install kubectl, kubectx and kubens
 
@@ -221,8 +195,8 @@ I decided to deploy the application container on GKE within the calculator names
 
 ```bash
 cd helm/calculator-app
-kubectl create ns app
-kubens app
+kubectl create ns model-serving
+kubens model-serving
 helm upgrade --install calculator-app .
 ```
 
@@ -231,7 +205,7 @@ helm upgrade --install calculator-app .
 kubectl get ing
 ```
 
-- Add the domain name `txt2img.com` of this IP to `/etc/hosts` where the hostnames are mapped to IP addresses. 
+- Add the domain name `calculator.com` of this IP to `/etc/hosts` where the hostnames are mapped to IP addresses. 
 
 Alternatively, you can utilize the wildcard DNS service provided by *.nip.io, eliminating the need to manually edit the `/etc/hosts` file. This service allows you to access your service using a domain name based on the IP address. For example, if your IP address is `192.168.1.100`, you can access your service using `192-168-1-100.nip.io`.
 
@@ -240,13 +214,19 @@ sudo nano /etc/hosts
 [INGRESS_IP_ADDRESS] calculator.com
 ```
 
+##### Make changes to the kube-prometheus-stack helm file
+
+In the /helm/grafana-prometheus/kube-promethus-stack/values.yaml file, replace the recipient's email with your email so alert manager can send alerts to your email.
+
+![code-changes](images/code-changes.png)
+
 ##### Deploy monitoring service
 
 ```bash
 cd helm/grafana-prometheus/kube-prometheus-stack/
 kubectl create ns monitoring
 kubens monitoring
-helm dependcy build
+helm dependency build
 helm upgrade --install kube-grafana-prometheus .
 ```
 
@@ -277,150 +257,22 @@ Environment:
     GF_SECURITY_ADMIN_USER:      <set to the key 'admin-user' in secret 'kube-prometheus-stack-grafana'>      Optional: false
     GF_SECURITY_ADMIN_PASSWORD:  <set to the key 'admin-password' in secret 'kube-prometheus-stack-grafana'>  Optional: false
 ```
-### CI/CD with Jenkins on GCE
-
-Now, we would like to set up a CI/CD with Jenkins on Google Compute Engine(GCE), the objective is 
-to establish a streamlined and automated process for Continuous Delivery of Machine Learning application.
-
-We use Ansible to define and deploy the infrastructure such as virutal machine to deploy Jenkins on GCE.
-
-#### Create the VM instance
-
-Access to Service accounts and select Compute Admin role (Full control of all Compute Engine resources) for your account.
-
-Generate and download new key as json file. Remind that we need to keeps this file safely. Put your credentials in the folder ansible/secrets, which is used to connect GCE. 
-
-We should update project ID and service_account_file in `ansible/deploy_jenkins/create_compute_instance.yaml`.
-
-- First, create virtual env:
-```bash
-cd ansible
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-chmod 600 secrets/namsee_key.json
-```
-
-- Execute the playbook to create the Compute Engine instance:
-
-```bash
-cd playbook_with_jenkins
-ansible-playbook create_compute_instance.yaml
-```
-![instance-for-jenkins](images/instance-for-jenkins.png)
-
-#### Install Docker and Jenkins on GCE
-
-Deploy our custom Jenkins (which use custom image from the folder `deployment/jenkins`) in following steps:
-- Update the external IP of newly created instance to `inventory` file.
-
-```bash
-cd ansible/playbook_with_jenkins
-ansible-playbook -i ../inventory deploy_jenkins.yml
-```
-
-#### Setting Jenkins via GCE
-
-##### Launch Jenkins instance
-
-- Access to the instance via ssh command in terminal :
-
-```bash
-ssh user_name@external_IP
-```
-
-- Connect Jenkins UI via browser: `external_IP:8081`
-![jenkinsUI](images/JenkinsUI.png)
-
-- For unlock Jenkins, copy password from terminal and paste into web browser:
-
-```bash
-sudo docker ps # check if the Jenkins container is running 
-sudo docker logs jenkins
-```
-
-![unlock_jenkins](images/unlock_jenkins.png)
-
-- Type `skip and continue as admin` and `save and Continue`.
-So to log in, I use the username `admin` as the the username.
-
-##### Setup connection Jenkins to github repo 
-
-- Add Jenkins url to webhooks in github repo:
-
-![add_webhook](images/add_webhook.png)
-
-- Create a new multibranch project.
-
-- Go to that project -> configure. Under branch sources section, create a new "github" source. 
-
-- Create 2 new credentials with 'Username and password' option (one for github, one for docker)
-
-- Use the github credential for the source
-
-- Add your github repository's url to the source and then save.
-
-
-
-![creden_jenkins](images/creden_jenkins.png)
-![credentials](images/credentials.png)
-
-- Install the Kurbenestes, Docker, DockerPipeline, GCLOUD SDK plugins at `Manage Jenkins/Plugins` then restart jenkins after complete installation
-
-```bash
-sudo docker restart jenkins
-```
-
-##### Setup connection GKE to Jenkins
-
-- Go to manage jenkins -> cloud -> create cloud.
-
-- Run this CLI command in your terminal to get kubernetes's API url
-
-```bash
-kubectl config view -o jsonpath='{.clusters[?(@.name == "gke_linen-walker-444306-k9_us-central1-a_linen-walker-444306-k9-gke")].cluster.server}'
-```
-
-- Paste that url into the kubernetes's URL section: https://<kubernetes's URL> (no port)
-
-- Check "Disable https certificate check"
-
-- Create a new credential with 'Service account from private key' option.
-
-- Use the credential you just created, then click "Test connection" to verify connection. If connection is successful, click save.
-
-##### Create jenkins service account in GKE
-
-To allow Jenkins to deploy to GKE, we need to create a service account in GKE and give it the necessary permissions.
-
-```bash
-kubectl create serviceaccount jenkins-sa -n model-serving
-kubectl apply -f jenkins_sa/role.yaml
-kubectl apply -f jenkins_sa/role_binding.yaml
-```
-
-#### Continuous deployment
-
-The CI/CD pipleine consist the three stages:
-- Test model correctness, unit test cases dedicated to source code.
-- Building the application image, and register it into DockerHub.
-- Deploy the application with latest image from DockerHub to GKE cluster.
-
-An overview of success build pipeline in jenkins:
-![build_jenkins](images/build_jenkins.png)
 
 ### Demo 
 
-To explore the Disaster classification API, you can access http://disaster.classify.com/docs. This endpoint provides a comprehensive overview of the API's functionality, allowing you to test its capabilities effortlessly.
+To explore the Disaster classification API, you can access http://calculator.com/docs. This endpoint provides a comprehensive overview of the API's functionality, allowing you to test its capabilities effortlessly.
 
-![fastAPI](images/fast_api.gif)
+![fastAPI](images/fast_api.png)
 
 For monitoring the resource quotas across namespaces within our Kubernetes cluster, Grafana provides an intuitive interface accessible via grafana.monitoring.com. This dashboard offers insights into resource utilization, including CPU, memory, and more, for each pod within the cluster.
 
-![grafana](images/grafana.png)
-
 Moreover, we've implemented a custom dashboard in Grafana to monitor specific resource metrics, such as CPU usage, for pods within the `model-serving` namespace. This provides targeted insights into the performance of critical components within our infrastructure.
 
-![prometheus](images/prometheus.png)
+
+![grafana](images/grafana.png)
+
+Alerts can be seen from http://alertmanager.monitoring.com. Any alert in critical severity will be noted by prometheus and starts in pending state, after 2 minutes, if it still has critical severity, it will receive the firing state and alert manager will send emails to the recipient notifying the problem.
+
+![prometheus](images/alert_manager.png)
 
 
