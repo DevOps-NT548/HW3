@@ -275,4 +275,6 @@ Alerts can be seen from http://alertmanager.monitoring.com. Any alert in critica
 
 ![prometheus](images/alert_manager.png)
 
+Email in the recipient's inbox:
 
+![email_sent](images/email_sent.png)
